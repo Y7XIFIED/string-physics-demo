@@ -39,3 +39,5 @@ npm run build
 ---
 
 Made by **Y7XIFIED**
+
+![Preview Demo](preview.gif)
