@@ -1,4 +1,5 @@
-import { prepareWithSegments, layoutWithLines, type PreparedText } from './pretext.js';
+// pretext.js only needed for prepareWithSegments (used indirectly via measureCtx)
+// layoutWithLines removed — line structure now derived from layoutPositions to avoid dual-engine mismatch
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,7 +62,7 @@ measureCtx.font = FONT;
 await document.fonts.load(FONT);
 await document.fonts.ready;
 
-const prepared: PreparedText = prepareWithSegments(TEXT, FONT);
+// `prepared` removed — zig-zag mapping now uses positions[] directly
 const MARGIN = 20;
 const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 
@@ -120,40 +121,41 @@ const positions: Position[] = layoutPositions(getMaxWidth());
 
 /**
  * Build the zig-zag (snake) string-order mapping: stringOrder[i] = readingIndex.
- * The snake ensures the physical string connects end-of-line to end-of-line so
- * the chain wraps cleanly between rows.
+ * Derives line groupings from the already-computed positions[] array by grouping
+ * graphemes that share the same y-coordinate — guaranteeing both layout and
+ * chain-order always use the exact same line breaks with no dual-engine mismatch.
  */
-function buildZigzagMapping(maxWidth: number): number[] {
-  const { lines } = layoutWithLines(prepared, maxWidth, LINE_HEIGHT);
-
-  const lineIndices: number[][] = [];
-  let gi = 0;
-  for (let li = 0; li < lines.length; li++) {
-    const lineGraphemes = [...segmenter.segment(lines[li].text)].map(s => s.segment);
-    const indices: number[] = [];
-    for (let j = 0; j < lineGraphemes.length; j++) {
-      indices.push(gi++);
-    }
-    lineIndices.push(indices);
+function buildZigzagMapping(pos: Position[]): number[] {
+  // Group reading indices by rounded y value (same line = same y after offsetY)
+  const lineMap = new Map<number, number[]>();
+  for (let i = 0; i < pos.length; i++) {
+    const y = Math.round(pos[i].y);
+    if (!lineMap.has(y)) lineMap.set(y, []);
+    lineMap.get(y)!.push(i);
   }
 
+  // Sort lines top-to-bottom, each line is already in reading order (left-to-right)
+  const lines = [...lineMap.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([, indices]) => indices);
+
   // Flip alternating lines so the last line always reads L→R
-  const lastLineIdx = lineIndices.length - 1;
+  const lastLineIdx = lines.length - 1;
   const needFlip = lastLineIdx % 2 === 1;
   const stringOrder: number[] = [];
-  for (let li = 0; li < lineIndices.length; li++) {
+  for (let li = 0; li < lines.length; li++) {
     const reversed = needFlip ? (li % 2 === 0) : (li % 2 === 1);
     if (reversed) {
-      stringOrder.push(...[...lineIndices[li]].reverse());
+      stringOrder.push(...[...lines[li]].reverse());
     } else {
-      stringOrder.push(...lineIndices[li]);
+      stringOrder.push(...lines[li]);
     }
   }
 
   return stringOrder;
 }
 
-const stringOrder: number[] = buildZigzagMapping(getMaxWidth());
+const stringOrder: number[] = buildZigzagMapping(positions);
 
 // Build the letters array in string (zig-zag) order
 const letters: Letter[] = stringOrder.map(ri => {
