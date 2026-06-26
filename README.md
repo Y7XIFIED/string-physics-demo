@@ -1,4 +1,4 @@
-<h3 align="center"><b>STRING-PHYSICS-DEMO</b></h3>
+<h3 align="center"><b>String-Physics-Demo</b></h3>
 
 <p align="center"><img src="https://skillicons.dev/icons?i=html,css,js,vite" /></p>
 
