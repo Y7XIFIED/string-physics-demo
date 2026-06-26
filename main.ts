@@ -209,7 +209,7 @@ for (let i = lastIdx; i > lastIdx - 6; i--) {
 
 // "DRAG ME" hint image
 const hint = document.createElement('img');
-hint.src = new URL('/drag.png', import.meta.url).href;
+hint.src = new URL('/1.png', import.meta.url).href;
 hint.style.cssText = 'position:absolute;top:0;left:0;width:60px;pointer-events:none;opacity:0;transition:opacity 0.8s;';
 container.appendChild(hint);
 

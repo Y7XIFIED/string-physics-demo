@@ -46,7 +46,7 @@ String-Physics-Demo/
 ├── pretext.d.ts
 ├── pretext.js
 ├── public
-│   ├── drag.png
+│   ├── 1.png
 │   ├── Inertia.otf
 │   ├── MoonWalk.otf
 │   └── Nasalization.otf
